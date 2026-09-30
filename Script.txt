@@ -1,581 +1,627 @@
 -- ==============================================
--- ✅ MONTAR UNA MASCOTA • ESP HUEVOS + TP + AUTO-FARM
--- 🥚 ESP con distancia • Cuadro color según cercanía
--- 🐄 TP individual + 🥚 Auto-Farm separado
--- ✅ Todo visible • Sin scroll • Minimizar + Cerrar
--- 👤 @unrandom_tk
+-- 🐾 RIDING A PET • ESP + Chams + Info + FPS
+-- ES / EN / PT • @unrandom_tk
 -- ==============================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
-local StarterGui = game:GetService("StarterGui")
 
 local LP = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
-local LoopConn = nil
-local ESPConn = nil
-local ESPObjetos = {}
-
--- ==============================================
--- 🔔 NOTIFICACIÓN AL ABRIR
--- ==============================================
-task.spawn(function()
-	task.wait(1)
-	pcall(function()
-		StarterGui:SetCore("SendNotification", {
-			Title = "✅ CARGADO",
-			Text = "Estás usando: MONTAR UNA MASCOTA\nde @unrandom_tk",
-			Duration = 4
-		})
-	end)
-end)
-
--- ==============================================
--- 📍 TUS RANCHOS
--- ==============================================
-local RANCHOS = {
-	{nombre = "Rancho 1", pos = Vector3.new(170.08368, 107.20649, -0.98353213)},
-	{nombre = "Rancho 2", pos = Vector3.new(285.96494, 97.143208, 0.50559703)},
-	{nombre = "Rancho 3", pos = Vector3.new(256.09274, 82.7125, 0.89274627)},
-	{nombre = "Rancho 4", pos = Vector3.new(138.675629, 77.107094, 0.274461687)},
-	{nombre = "Rancho 5", pos = Vector3.new(18.7494526, 85.938652, -0.9897583)},
-	{nombre = "Rancho 6", pos = Vector3.new(36.9696503, 100.18652, -0.919889987)},
-}
-
--- ==============================================
--- 🔧 INTERFAZ
--- ==============================================
-local parent
-pcall(function() parent = gethui() end)
-if not parent then pcall(function() parent = CoreGui end) end
-if not parent then parent = LP:WaitForChild("PlayerGui") end
+local parent = LP:WaitForChild("PlayerGui")
 
 pcall(function()
 	for _, v in pairs(parent:GetChildren()) do
-		if v.Name == "MontarMascota" then v:Destroy() end
+		if v.Name == "RidingAPet" then v:Destroy() end
 	end
 end)
 
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "MontarMascota"
-Gui.ResetOnSpawn = false
-Gui.DisplayOrder = 999999
-Gui.Parent = parent
+local NINJA_IMAGE = "rbxassetid://120304331608230"
 
--- ==============================================
--- ⚙️ CONFIGURACIÓN
--- ==============================================
-local S = {
-	FarmActivo = false,
-	RanchoFarm = 4,
-	Velocidad = 80,
-	Minimizado = false,
-	Yendo = false,
-	ESP = true,
+-- ===== IDIOMAS =====
+local Lang = "ES" -- ES | EN | PT
+
+local T = {
+	ES = {
+		Title = "🐾 RIDING A PET",
+		TabESP = "🥚 ESP",
+		TabInfo = "👤 INFO",
+		EspOn = "🥚 ESP + CHAMS: ON",
+		EspOff = "🥚 ESP + CHAMS: OFF",
+		Fps = "⚡ FPS Boost: ACTIVO",
+		User = "Usuario",
+		Display = "Display",
+		UserId = "UserId",
+		Age = "AccountAge",
+		Days = " días",
+		Credit = "@unrandom_tk",
+		LangLabel = "Idioma",
+	},
+	EN = {
+		Title = "🐾 RIDING A PET",
+		TabESP = "🥚 ESP",
+		TabInfo = "👤 INFO",
+		EspOn = "🥚 ESP + CHAMS: ON",
+		EspOff = "🥚 ESP + CHAMS: OFF",
+		Fps = "⚡ FPS Boost: ACTIVE",
+		User = "User",
+		Display = "Display",
+		UserId = "UserId",
+		Age = "AccountAge",
+		Days = " days",
+		Credit = "@unrandom_tk",
+		LangLabel = "Language",
+	},
+	PT = {
+		Title = "🐾 RIDING A PET",
+		TabESP = "🥚 ESP",
+		TabInfo = "👤 INFO",
+		EspOn = "🥚 ESP + CHAMS: ON",
+		EspOff = "🥚 ESP + CHAMS: OFF",
+		Fps = "⚡ FPS Boost: ATIVO",
+		User = "Usuário",
+		Display = "Display",
+		UserId = "UserId",
+		Age = "AccountAge",
+		Days = " dias",
+		Credit = "@unrandom_tk",
+		LangLabel = "Idioma",
+	},
 }
 
--- ✅ RESTAURAR COLISIONES
-local function RestaurarColisiones()
-	if not LP.Character then return end
-	for _, parte in pairs(LP.Character:GetDescendants()) do
-		if parte:IsA("BasePart") then
-			parte.CanCollide = true
-		end
-	end
+local function L()
+	return T[Lang] or T.ES
 end
 
--- ✅ TP INDIVIDUAL
-local function IrTP(indice)
-	if not LP.Character then return end
-	local HRP = LP.Character:FindFirstChild("HumanoidRootPart")
-	if not HRP then return end
-	local rancho = RANCHOS[indice]
-	if not rancho then return end
-	HRP.CFrame = CFrame.new(rancho.pos)
-	Estado.Text = "✅ TP → " .. rancho.nombre
-end
+local S = {
+	ESP = true,
+	Minimizado = false,
+	Tab = 1,
+}
 
--- ✅ AUTO-FARM
-local function IrFarm(indice)
-	if S.Yendo then return end
-	if not LP.Character then return end
-	local HRP = LP.Character:FindFirstChild("HumanoidRootPart")
-	if not HRP then return end
-	local rancho = RANCHOS[indice]
-	if not rancho then return end
+local ESPObjects = {}
+-- refs UI para actualizar idioma
+local UI = {}
 
-	S.Yendo = true
-	Estado.Text = "🥚 YENDO A: " .. rancho.nombre .. "..."
-
-	for _, parte in pairs(LP.Character:GetDescendants()) do
-		if parte:IsA("BasePart") then
-			parte.CanCollide = false
-		end
-	end
-
-	local destino = rancho.pos
-	local intentos = 0
-
-	while LP.Character and intentos < 500 do
-		intentos = intentos + 1
-		local actualHRP = LP.Character:FindFirstChild("HumanoidRootPart")
-		if not actualHRP then break end
-
-		local dist = (destino - actualHRP.Position).Magnitude
-		if dist < 2 then
-			actualHRP.CFrame = CFrame.new(destino)
-			break
-		end
-
-		local dir = (destino - actualHRP.Position).Unit
-		actualHRP.CFrame = CFrame.new(actualHRP.Position + dir * S.Velocidad)
-		task.wait(0.01)
-	end
-
-	if LP.Character then
-		local finalHRP = LP.Character:FindFirstChild("HumanoidRootPart")
-		if finalHRP then finalHRP.CFrame = CFrame.new(destino) end
-		task.wait(0.3)
-		RestaurarColisiones()
-	end
-
-	S.Yendo = false
-	Estado.Text = "✅ LLEGASTE A: " .. rancho.nombre
-end
-
--- 🥚 DETECTAR HUEVO
-local UltimoHuevo = 0
-local function BuscarHuevo()
-	if not S.FarmActivo then return end
-	if S.Yendo then return end
-	if not LP.Character then return end
-	local HRP = LP.Character:FindFirstChild("HumanoidRootPart")
-	if not HRP then return end
-
-	for _, obj in pairs(Workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			local nom = obj.Name:lower()
-			if nom:find("huevo") or nom:find("egg") then
-				local dist = (obj.Position - HRP.Position).Magnitude
-				if dist < 12 then
-					local ahora = os.clock()
-					if ahora - UltimoHuevo > 2 then
-						UltimoHuevo = ahora
-						task.wait(0.1)
-						IrFarm(S.RanchoFarm)
-					end
-					return
-				end
-			end
-		end
-	end
-end
-
--- ==============================================
--- ✨ ESP HUEVOS + DISTANCIA
--- ==============================================
-local function LimpiarESP()
-	for huevo, datos in pairs(ESPObjetos) do
-		pcall(function()
-			if datos.Cuadro then datos.Cuadro:Remove() end
-			if datos.Texto then datos.Texto:Remove() end
-		end)
-		ESPObjetos[huevo] = nil
-	end
-end
-
-local function CrearESP(huevo)
-	if ESPObjetos[huevo] then return end
-	local datos = {}
+-- ===== FPS BOOST =====
+local function ActivarFPS()
 	pcall(function()
-		if Drawing then
-			datos.Cuadro = Drawing.new("Square")
-			datos.Cuadro.Thickness = 2
-			datos.Cuadro.Filled = false
-			datos.Cuadro.Visible = false
-			datos.Cuadro.Color = Color3.fromRGB(255, 200, 50)
-			
-			datos.Texto = Drawing.new("Text")
-			datos.Texto.Size = 14
-			datos.Texto.Center = true
-			datos.Texto.Outline = true
-			datos.Texto.Visible = false
-			datos.Texto.Color = Color3.fromRGB(255, 255, 255)
-		end
+		settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 	end)
-	if datos.Cuadro or datos.Texto then
-		ESPObjetos[huevo] = datos
+	Lighting.GlobalShadows = false
+	Lighting.FogEnd = 9e9
+	Lighting.Brightness = 1
+	Lighting.ClockTime = 14
+	pcall(function()
+		Lighting.EnvironmentDiffuseScale = 0
+		Lighting.EnvironmentSpecularScale = 0
+	end)
+	for _, fx in pairs(Lighting:GetChildren()) do
+		if fx:IsA("BloomEffect") or fx:IsA("SunRaysEffect")
+			or fx:IsA("BlurEffect") or fx:IsA("ColorCorrectionEffect")
+			or fx:IsA("DepthOfFieldEffect") then
+			pcall(function() fx.Enabled = false end)
+		end
+	end
+	for _, v in pairs(Workspace:GetDescendants()) do
+		pcall(function()
+			if v:IsA("BasePart") then
+				v.CastShadow = false
+			elseif v:IsA("ParticleEmitter") or v:IsA("Trail")
+				or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+				v.Enabled = false
+			end
+		end)
+	end
+	local Terrain = Workspace:FindFirstChildOfClass("Terrain")
+	if Terrain then
+		Terrain.WaterWaveSize = 0
+		Terrain.WaterWaveSpeed = 0
+		Terrain.WaterReflectance = 0
 	end
 end
+ActivarFPS()
 
-local function ActualizarESP()
-	if not S.ESP then
-		for _, datos in pairs(ESPObjetos) do
-			pcall(function()
-				if datos.Cuadro then datos.Cuadro.Visible = false end
-				if datos.Texto then datos.Texto.Visible = false end
-			end)
-		end
-		return
+-- ===== ESP + CHAMS =====
+local IGNORAR = {
+	"horn", "brow", "nostril", "fur", "button", "eye", "mouth",
+	"leg", "arm", "hand", "foot", "head", "torso",
+	"mesh", "attachment", "weld", "fp_", "left", "right"
+}
+
+local function EsPieza(n)
+	n = n:lower()
+	for _, p in ipairs(IGNORAR) do
+		if n:find(p) then return true end
 	end
-	if not LP.Character then return end
-	local HRP = LP.Character:FindFirstChild("HumanoidRootPart")
-	if not HRP then return end
-	Camera = Workspace.CurrentCamera
-	
-	local huevosEncontrados = {}
+	return false
+end
+
+local function GetHuevos()
+	local lista, vistos = {}, {}
 	for _, obj in pairs(Workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
+		if obj:IsA("Model") then
 			local nom = obj.Name:lower()
-			if nom:find("huevo") or nom:find("egg") then
-				huevosEncontrados[obj] = true
-				CrearESP(obj)
-				local datos = ESPObjetos[obj]
-				if datos then
-					local pos, enPantalla = Camera:WorldToViewportPoint(obj.Position)
-					local distancia = (obj.Position - HRP.Position).Magnitude
-					if enPantalla and distancia < 500 then
-						local tam = math.max(20, 40 - distancia / 10)
-						if datos.Cuadro then
-							datos.Cuadro.Size = Vector2.new(tam, tam)
-							datos.Cuadro.Position = Vector2.new(pos.X - tam/2, pos.Y - tam/2)
-							datos.Cuadro.Visible = true
-							if distancia < 30 then
-								datos.Cuadro.Color = Color3.fromRGB(80, 255, 80)
-							elseif distancia < 80 then
-								datos.Cuadro.Color = Color3.fromRGB(255, 200, 50)
-							else
-								datos.Cuadro.Color = Color3.fromRGB(255, 80, 80)
-							end
-						end
-						if datos.Texto then
-							datos.Texto.Text = "🥚 " .. math.floor(distancia) .. " studs"
-							datos.Texto.Position = Vector2.new(pos.X, pos.Y + tam/2 + 2)
-							datos.Texto.Visible = true
-						end
-					else
-						if datos.Cuadro then datos.Cuadro.Visible = false end
-						if datos.Texto then datos.Texto.Visible = false end
-					end
+			if (nom:find("egg") or nom:find("huevo")) and not EsPieza(obj.Name) and not vistos[obj] then
+				local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+				if part and part.Transparency < 1 then
+					vistos[obj] = true
+					table.insert(lista, {
+						obj = obj,
+						part = part,
+						nombre = obj.Name,
+						pos = part.Position
+					})
 				end
 			end
 		end
 	end
-	
-	for huevo, datos in pairs(ESPObjetos) do
-		if not huevosEncontrados[huevo] or not huevo:IsDescendantOf(Workspace) then
-			pcall(function()
-				if datos.Cuadro then datos.Cuadro:Remove() end
-				if datos.Texto then datos.Texto:Remove() end
-			end)
-			ESPObjetos[huevo] = nil
-		end
-	end
+	return lista
 end
 
--- ==============================================
--- 📋 MENÚ
--- ==============================================
+local function ClearESP()
+	for _, d in pairs(ESPObjects) do
+		pcall(function()
+			if d.hl then d.hl:Destroy() end
+			if d.bill then d.bill:Destroy() end
+		end)
+	end
+	table.clear(ESPObjects)
+end
+
+local function MakeESP(obj, part)
+	if ESPObjects[obj] then return end
+	if obj:FindFirstChild("NinjaHL") then return end
+
+	local d = {}
+	local hl = Instance.new("Highlight")
+	hl.Name = "NinjaHL"
+	hl.Adornee = obj
+	hl.FillColor = Color3.fromRGB(255, 255, 255)
+	hl.OutlineColor = Color3.fromRGB(255, 215, 0)
+	hl.FillTransparency = 0.4
+	hl.OutlineTransparency = 0
+	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	hl.Enabled = true
+	hl.Parent = obj
+	d.hl = hl
+
+	local bill = Instance.new("BillboardGui")
+	bill.Name = "NinjaBill"
+	bill.Size = UDim2.new(0, 150, 0, 40)
+	bill.AlwaysOnTop = true
+	bill.StudsOffset = Vector3.new(0, 3, 0)
+	bill.Adornee = part
+	bill.Parent = part
+
+	local nameL = Instance.new("TextLabel")
+	nameL.Size = UDim2.new(1, 0, 0, 20)
+	nameL.BackgroundTransparency = 1
+	nameL.Text = "🥚 " .. obj.Name
+	nameL.Font = Enum.Font.GothamBold
+	nameL.TextSize = 13
+	nameL.TextColor3 = Color3.fromRGB(255, 220, 0)
+	nameL.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	nameL.TextStrokeTransparency = 0
+	nameL.Parent = bill
+
+	local distL = Instance.new("TextLabel")
+	distL.Size = UDim2.new(1, 0, 0, 16)
+	distL.Position = UDim2.new(0, 0, 0, 20)
+	distL.BackgroundTransparency = 1
+	distL.Text = "0m"
+	distL.Font = Enum.Font.Gotham
+	distL.TextSize = 11
+	distL.TextColor3 = Color3.fromRGB(255, 255, 255)
+	distL.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	distL.TextStrokeTransparency = 0
+	distL.Parent = bill
+
+	d.bill = bill
+	d.distL = distL
+	ESPObjects[obj] = d
+end
+
+local lastESP = 0
+RunService.RenderStepped:Connect(function()
+	if not S.ESP then return end
+	if tick() - lastESP < 0.2 then return end
+	lastESP = tick()
+
+	local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	local activos = {}
+	for _, h in ipairs(GetHuevos()) do
+		activos[h.obj] = true
+		if not ESPObjects[h.obj] then
+			MakeESP(h.obj, h.part)
+		end
+		local d = ESPObjects[h.obj]
+		if d then
+			if d.hl and d.hl.Parent then
+				d.hl.Enabled = true
+				d.hl.Adornee = h.obj
+			end
+			if d.distL then
+				d.distL.Text = math.floor((h.pos - root.Position).Magnitude) .. "m"
+			end
+		end
+	end
+
+	for obj, d in pairs(ESPObjects) do
+		if not activos[obj] or not obj.Parent then
+			pcall(function()
+				if d.hl then d.hl:Destroy() end
+				if d.bill then d.bill:Destroy() end
+			end)
+			ESPObjects[obj] = nil
+		end
+	end
+end)
+
+-- ===== GUI =====
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "RidingAPet"
+Gui.ResetOnSpawn = false
+Gui.DisplayOrder = 999999
+Gui.IgnoreGuiInset = true
+Gui.Parent = parent
+
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 300, 0, 680)
-Main.Position = UDim2.new(0.02, 0, 0.5, -340)
-Main.BackgroundColor3 = Color3.fromRGB(22, 26, 22)
+Main.Size = UDim2.new(0, 280, 0, 380)
+Main.Position = UDim2.new(0.5, -140, 0.5, -190)
+Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
 Main.Active = true
 Main.Draggable = true
+Main.ClipsDescendants = true
 Main.Parent = Gui
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
-Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 200, 50)
 
--- 🔷 ENCABEZADO
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(212, 175, 55)
+stroke.Thickness = 1.5
+stroke.Parent = Main
+
+local bg = Instance.new("ImageLabel")
+bg.Name = "Fondo"
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+bg.BackgroundTransparency = 0
+bg.Image = NINJA_IMAGE
+bg.ImageTransparency = 0
+bg.ScaleType = Enum.ScaleType.Fit
+bg.ZIndex = 1
+bg.Parent = Main
+Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 14)
+
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 65)
-Header.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+Header.Size = UDim2.new(1, 0, 0, 48)
+Header.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+Header.BackgroundTransparency = 0.2
+Header.ZIndex = 3
 Header.Parent = Main
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 14)
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -80, 0, 25)
-Title.Position = UDim2.new(0, 15, 0, 5)
-Title.BackgroundTransparency = 1
-Title.Text = "🐾 MONTAR UNA MASCOTA"
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
+UI.Title = Instance.new("TextLabel")
+UI.Title.Size = UDim2.new(1, -85, 0, 28)
+UI.Title.Position = UDim2.new(0, 14, 0, 2)
+UI.Title.BackgroundTransparency = 1
+UI.Title.Text = L().Title
+UI.Title.Font = Enum.Font.GothamBlack
+UI.Title.TextSize = 15
+UI.Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+UI.Title.TextXAlignment = Enum.TextXAlignment.Left
+UI.Title.ZIndex = 4
+UI.Title.Parent = Header
 
--- 👤 CRÉDITO DEBAJO DEL TÍTULO
-local Credit = Instance.new("TextLabel")
-Credit.Size = UDim2.new(1, -80, 0, 18)
-Credit.Position = UDim2.new(0, 15, 0, 30)
-Credit.BackgroundTransparency = 1
-Credit.Text = "@unrandom_tk"
-Credit.Font = Enum.Font.Gotham
-Credit.TextSize = 11
-Credit.TextColor3 = Color3.fromRGB(60, 60, 60)
-Credit.TextXAlignment = Enum.TextXAlignment.Left
-Credit.Parent = Header
+UI.Credit = Instance.new("TextLabel")
+UI.Credit.Size = UDim2.new(1, -85, 0, 16)
+UI.Credit.Position = UDim2.new(0, 14, 0, 28)
+UI.Credit.BackgroundTransparency = 1
+UI.Credit.Text = "@unrandom_tk"
+UI.Credit.Font = Enum.Font.Gotham
+UI.Credit.TextSize = 11
+UI.Credit.TextColor3 = Color3.fromRGB(212, 175, 55)
+UI.Credit.TextXAlignment = Enum.TextXAlignment.Left
+UI.Credit.ZIndex = 4
+UI.Credit.Parent = Header
 
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 35, 0, 35)
-MinBtn.Position = UDim2.new(1, -75, 0, 15)
-MinBtn.BackgroundColor3 = Color3.fromRGB(200, 120, 0)
-MinBtn.Text = "-"
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Position = UDim2.new(1, -70, 0, 9)
+MinBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 58)
+MinBtn.Text = "−"
 MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 20
+MinBtn.TextSize = 18
 MinBtn.TextColor3 = Color3.new(1, 1, 1)
+MinBtn.ZIndex = 4
 MinBtn.Parent = Header
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 7)
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 35, 0, 35)
-CloseBtn.Position = UDim2.new(1, -38, 0, 15)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-CloseBtn.Text = "✕"
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 16
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -36, 0, 9)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(140, 40, 40)
+CloseBtn.Text = "X"
+CloseBtn.Font = Enum.Font.GothamBlack
+CloseBtn.TextSize = 14
 CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+CloseBtn.ZIndex = 4
 CloseBtn.Parent = Header
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 7)
 
--- ✨ BOTÓN ESP
-local BtnESP = Instance.new("TextButton")
-BtnESP.Size = UDim2.new(1, -30, 0, 35)
-BtnESP.Position = UDim2.new(0, 15, 0, 75)
-BtnESP.BackgroundColor3 = Color3.fromRGB(60, 160, 60)
-BtnESP.Text = "✨ ESP HUEVOS: ACTIVADO"
-BtnESP.Font = Enum.Font.GothamBold
-BtnESP.TextSize = 13
-BtnESP.TextColor3 = Color3.new(1, 1, 1)
-BtnESP.Parent = Main
-Instance.new("UICorner", BtnESP).CornerRadius = UDim.new(0, 10)
+local TabBar = Instance.new("Frame")
+TabBar.Size = UDim2.new(1, -20, 0, 34)
+TabBar.Position = UDim2.new(0, 10, 0, 54)
+TabBar.BackgroundTransparency = 1
+TabBar.ZIndex = 4
+TabBar.Parent = Main
 
--- 🐄 TÍTULO TP
-local TPTit = Instance.new("TextLabel")
-TPTit.Size = UDim2.new(1, -30, 0, 20)
-TPTit.Position = UDim2.new(0, 15, 0, 118)
-TPTit.BackgroundTransparency = 1
-TPTit.Text = "🐄 TP — Toca para ir AHORA"
-TPTit.Font = Enum.Font.GothamBold
-TPTit.TextSize = 12
-TPTit.TextColor3 = Color3.fromRGB(255, 200, 80)
-TPTit.TextXAlignment = Enum.TextXAlignment.Center
-TPTit.Parent = Main
-
--- 🐄 BOTONES TP
-local BotonesTP = {}
-for i, rancho in ipairs(RANCHOS) do
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -30, 0, 28)
-	btn.Position = UDim2.new(0, 15, 0, 142 + (i-1)*31)
-	btn.BackgroundColor3 = Color3.fromRGB(160, 100, 0)
-	btn.Text = "🐄 "..rancho.nombre
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 12
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.Parent = Main
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-	BotonesTP[i] = btn
-	btn.MouseButton1Click:Connect(function()
-		IrTP(i)
-	end)
+local function MakeTab(text, xScale)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0.5, -4, 1, 0)
+	b.Position = UDim2.new(xScale, xScale > 0 and 4 or 0, 0, 0)
+	b.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+	b.Text = text
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 12
+	b.TextColor3 = Color3.fromRGB(220, 220, 220)
+	b.ZIndex = 4
+	b.Parent = TabBar
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	return b
 end
 
--- 🥚 TÍTULO FARM
-local FarmTit = Instance.new("TextLabel")
-FarmTit.Size = UDim2.new(1, -30, 0, 20)
-FarmTit.Position = UDim2.new(0, 15, 0, 330)
-FarmTit.BackgroundTransparency = 1
-FarmTit.Text = "🥚 FARM — Elige destino"
-FarmTit.Font = Enum.Font.GothamBold
-FarmTit.TextSize = 12
-FarmTit.TextColor3 = Color3.fromRGB(100, 255, 100)
-FarmTit.TextXAlignment = Enum.TextXAlignment.Center
-FarmTit.Parent = Main
+UI.TabESP = MakeTab(L().TabESP, 0)
+UI.TabInfo = MakeTab(L().TabInfo, 0.5)
 
--- 🥚 BOTONES FARM
-local BotonesFarm = {}
-for i, rancho in ipairs(RANCHOS) do
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, -30, 0, 28)
-	btn.Position = UDim2.new(0, 15, 0, 353 + (i-1)*31)
-	btn.BackgroundColor3 = i == S.RanchoFarm and Color3.fromRGB(60, 160, 60) or Color3.fromRGB(30, 70, 30)
-	btn.Text = "🥚 "..rancho.nombre
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 12
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.Parent = Main
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+local Body = Instance.new("Frame")
+Body.Size = UDim2.new(1, -20, 1, -130)
+Body.Position = UDim2.new(0, 10, 0, 94)
+Body.BackgroundTransparency = 1
+Body.ZIndex = 4
+Body.Parent = Main
 
-	BotonesFarm[i] = btn
-	btn.MouseButton1Click:Connect(function()
-		S.RanchoFarm = i
-		for j = 1, #BotonesFarm do
-			BotonesFarm[j].BackgroundColor3 = j == i and Color3.fromRGB(60, 160, 60) or Color3.fromRGB(30, 70, 30)
-		end
-		Estado.Text = "✅ FARM → "..rancho.nombre
-	end)
+-- Page ESP
+local PageESP = Instance.new("Frame")
+PageESP.Size = UDim2.new(1, 0, 1, 0)
+PageESP.BackgroundTransparency = 1
+PageESP.ZIndex = 4
+PageESP.Parent = Body
+
+UI.BtnESP = Instance.new("TextButton")
+UI.BtnESP.Size = UDim2.new(1, 0, 0, 40)
+UI.BtnESP.BackgroundColor3 = Color3.fromRGB(40, 120, 60)
+UI.BtnESP.Text = L().EspOn
+UI.BtnESP.Font = Enum.Font.GothamBold
+UI.BtnESP.TextSize = 14
+UI.BtnESP.TextColor3 = Color3.new(1, 1, 1)
+UI.BtnESP.ZIndex = 4
+UI.BtnESP.Parent = PageESP
+Instance.new("UICorner", UI.BtnESP).CornerRadius = UDim.new(0, 10)
+
+UI.FpsLbl = Instance.new("TextLabel")
+UI.FpsLbl.Size = UDim2.new(1, 0, 0, 28)
+UI.FpsLbl.Position = UDim2.new(0, 0, 0, 50)
+UI.FpsLbl.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+UI.FpsLbl.BackgroundTransparency = 0.15
+UI.FpsLbl.Text = L().Fps
+UI.FpsLbl.Font = Enum.Font.GothamBold
+UI.FpsLbl.TextSize = 12
+UI.FpsLbl.TextColor3 = Color3.fromRGB(100, 220, 120)
+UI.FpsLbl.ZIndex = 4
+UI.FpsLbl.Parent = PageESP
+Instance.new("UICorner", UI.FpsLbl).CornerRadius = UDim.new(0, 8)
+
+-- Selector de idioma
+UI.LangLbl = Instance.new("TextLabel")
+UI.LangLbl.Size = UDim2.new(1, 0, 0, 18)
+UI.LangLbl.Position = UDim2.new(0, 0, 0, 90)
+UI.LangLbl.BackgroundTransparency = 1
+UI.LangLbl.Text = L().LangLabel
+UI.LangLbl.Font = Enum.Font.GothamBold
+UI.LangLbl.TextSize = 11
+UI.LangLbl.TextColor3 = Color3.fromRGB(212, 175, 55)
+UI.LangLbl.ZIndex = 4
+UI.LangLbl.Parent = PageESP
+
+local LangBar = Instance.new("Frame")
+LangBar.Size = UDim2.new(1, 0, 0, 32)
+LangBar.Position = UDim2.new(0, 0, 0, 112)
+LangBar.BackgroundTransparency = 1
+LangBar.ZIndex = 4
+LangBar.Parent = PageESP
+
+local function LangBtn(text, x)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0.33, -4, 1, 0)
+	b.Position = UDim2.new(x, 0, 0, 0)
+	b.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+	b.Text = text
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 12
+	b.TextColor3 = Color3.new(1, 1, 1)
+	b.ZIndex = 4
+	b.Parent = LangBar
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	return b
 end
 
--- 🟢 BOTÓN ACTIVAR FARM
-local BtnFarm = Instance.new("TextButton")
-BtnFarm.Size = UDim2.new(1, -30, 0, 40)
-BtnFarm.Position = UDim2.new(0, 15, 0, 540)
-BtnFarm.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
-BtnFarm.Text = "🔴 FARM DESACTIVADO"
-BtnFarm.Font = Enum.Font.GothamBold
-BtnFarm.TextSize = 14
-BtnFarm.TextColor3 = Color3.new(1, 1, 1)
-BtnFarm.Parent = Main
-Instance.new("UICorner", BtnFarm).CornerRadius = UDim.new(0, 12)
+UI.BtnES = LangBtn("ES", 0)
+UI.BtnEN = LangBtn("EN", 0.33)
+UI.BtnPT = LangBtn("PT", 0.66)
 
--- ⚡ VELOCIDAD
-local VelLbl = Instance.new("TextLabel")
-VelLbl.Size = UDim2.new(1, -30, 0, 18)
-VelLbl.Position = UDim2.new(0, 15, 0, 585)
-VelLbl.BackgroundTransparency = 1
-VelLbl.Text = "⚡ VELOCIDAD: " .. S.Velocidad
-VelLbl.Font = Enum.Font.GothamBold
-VelLbl.TextSize = 12
-VelLbl.TextColor3 = Color3.fromRGB(255, 200, 80)
-VelLbl.Parent = Main
+-- Page Info
+local PageInfo = Instance.new("Frame")
+PageInfo.Size = UDim2.new(1, 0, 1, 0)
+PageInfo.BackgroundTransparency = 1
+PageInfo.Visible = false
+PageInfo.ZIndex = 4
+PageInfo.Parent = Body
 
-local VelMenos = Instance.new("TextButton")
-VelMenos.Size = UDim2.new(0, 70, 0, 30)
-VelMenos.Position = UDim2.new(0, 15, 0, 605)
-VelMenos.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-VelMenos.Text = "−"
-VelMenos.Font = Enum.Font.GothamBold
-VelMenos.TextSize = 18
-VelMenos.TextColor3 = Color3.new(1, 1, 1)
-VelMenos.Parent = Main
-Instance.new("UICorner", VelMenos).CornerRadius = UDim.new(0, 10)
+local AvatarRing = Instance.new("Frame")
+AvatarRing.Size = UDim2.new(0, 84, 0, 84)
+AvatarRing.Position = UDim2.new(0.5, -42, 0, 4)
+AvatarRing.BackgroundColor3 = Color3.fromRGB(212, 175, 55)
+AvatarRing.ZIndex = 4
+AvatarRing.Parent = PageInfo
+Instance.new("UICorner", AvatarRing).CornerRadius = UDim.new(1, 0)
 
-local VelMas = Instance.new("TextButton")
-VelMas.Size = UDim2.new(0, 70, 0, 30)
-VelMas.Position = UDim2.new(1, -85, 0, 605)
-VelMas.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-VelMas.Text = "+"
-VelMas.Font = Enum.Font.GothamBold
-VelMas.TextSize = 18
-VelMas.TextColor3 = Color3.new(1, 1, 1)
-VelMas.Parent = Main
-Instance.new("UICorner", VelMas).CornerRadius = UDim.new(0, 10)
+local AvatarInner = Instance.new("Frame")
+AvatarInner.Size = UDim2.new(1, -6, 1, -6)
+AvatarInner.Position = UDim2.new(0, 3, 0, 3)
+AvatarInner.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+AvatarInner.ZIndex = 5
+AvatarInner.Parent = AvatarRing
+Instance.new("UICorner", AvatarInner).CornerRadius = UDim.new(1, 0)
 
--- 📊 ESTADO
-local Estado = Instance.new("TextLabel")
-Estado.Size = UDim2.new(1, -30, 0, 25)
-Estado.Position = UDim2.new(0, 15, 0, 640)
-Estado.BackgroundTransparency = 1
-Estado.Text = "✅ ESP activado • Verás huevos marcados"
-Estado.Font = Enum.Font.Gotham
-Estado.TextSize = 10
-Estado.TextColor3 = Color3.fromRGB(180, 200, 180)
-Estado.Parent = Main
+local Avatar = Instance.new("ImageLabel")
+Avatar.Size = UDim2.new(1, -4, 1, -4)
+Avatar.Position = UDim2.new(0, 2, 0, 2)
+Avatar.BackgroundTransparency = 1
+Avatar.ZIndex = 6
+Avatar.Parent = AvatarInner
+Instance.new("UICorner", Avatar).CornerRadius = UDim.new(1, 0)
 
--- 💧 MARCA DE AGUA ABAJO
-local MarcaAgua = Instance.new("TextLabel")
-MarcaAgua.Size = UDim2.new(1, 0, 0, 20)
-MarcaAgua.Position = UDim2.new(0, 0, 1, -20)
-MarcaAgua.BackgroundTransparency = 1
-MarcaAgua.Text = "© @unrandom_tk"
-MarcaAgua.Font = Enum.Font.GothamBold
-MarcaAgua.TextSize = 9
-MarcaAgua.TextColor3 = Color3.fromRGB(120, 120, 120)
-MarcaAgua.Parent = Main
+task.spawn(function()
+	local ok, url = pcall(function()
+		return Players:GetUserThumbnailAsync(
+			LP.UserId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size150x150
+		)
+	end)
+	if ok and url then
+		Avatar.Image = url
+	else
+		Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LP.UserId .. "&w=150&h=150"
+	end
+end)
 
--- ==============================================
--- 🔘 CONEXIONES
--- ==============================================
-BtnESP.MouseButton1Click:Connect(function()
+UI.InfoLabels = {}
+
+local function InfoLine(y, key, value)
+	local f = Instance.new("Frame")
+	f.Size = UDim2.new(1, 0, 0, 28)
+	f.Position = UDim2.new(0, 0, 0, y)
+	f.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+	f.BackgroundTransparency = 0.15
+	f.ZIndex = 4
+	f.Parent = PageInfo
+	Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.new(0.4, 0, 1, 0)
+	l.Position = UDim2.new(0, 10, 0, 0)
+	l.BackgroundTransparency = 1
+	l.Text = key
+	l.Font = Enum.Font.GothamBold
+	l.TextSize = 11
+	l.TextColor3 = Color3.fromRGB(212, 175, 55)
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.ZIndex = 5
+	l.Parent = f
+
+	local v = Instance.new("TextLabel")
+	v.Size = UDim2.new(0.55, -10, 1, 0)
+	v.Position = UDim2.new(0.4, 0, 0, 0)
+	v.BackgroundTransparency = 1
+	v.Text = value
+	v.Font = Enum.Font.Gotham
+	v.TextSize = 11
+	v.TextColor3 = Color3.fromRGB(230, 230, 230)
+	v.TextXAlignment = Enum.TextXAlignment.Right
+	v.TextTruncate = Enum.TextTruncate.AtEnd
+	v.ZIndex = 5
+	v.Parent = f
+
+	return l
+end
+
+UI.InfoLabels.User = InfoLine(96, L().User, LP.Name)
+UI.InfoLabels.Display = InfoLine(128, L().Display, LP.DisplayName)
+UI.InfoLabels.UserId = InfoLine(160, L().UserId, tostring(LP.UserId))
+UI.InfoLabels.Age = InfoLine(192, L().Age, tostring(LP.AccountAge) .. L().Days)
+
+-- Crédito abajo
+UI.Footer = Instance.new("TextLabel")
+UI.Footer.Size = UDim2.new(1, -20, 0, 18)
+UI.Footer.Position = UDim2.new(0, 10, 1, -24)
+UI.Footer.BackgroundTransparency = 1
+UI.Footer.Text = "@unrandom_tk"
+UI.Footer.Font = Enum.Font.GothamBold
+UI.Footer.TextSize = 11
+UI.Footer.TextColor3 = Color3.fromRGB(212, 175, 55)
+UI.Footer.ZIndex = 4
+UI.Footer.Parent = Main
+
+local function ApplyLang()
+	local t = L()
+	UI.Title.Text = t.Title
+	UI.TabESP.Text = t.TabESP
+	UI.TabInfo.Text = t.TabInfo
+	UI.BtnESP.Text = S.ESP and t.EspOn or t.EspOff
+	UI.FpsLbl.Text = t.Fps
+	UI.LangLbl.Text = t.LangLabel
+	UI.InfoLabels.User.Text = t.User
+	UI.InfoLabels.Display.Text = t.Display
+	UI.InfoLabels.UserId.Text = t.UserId
+	UI.InfoLabels.Age.Text = t.Age
+	UI.Footer.Text = t.Credit
+	UI.Credit.Text = t.Credit
+
+	UI.BtnES.BackgroundColor3 = Lang == "ES" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(45, 45, 52)
+	UI.BtnEN.BackgroundColor3 = Lang == "EN" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(45, 45, 52)
+	UI.BtnPT.BackgroundColor3 = Lang == "PT" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(45, 45, 52)
+end
+
+local function SwitchTab(n)
+	S.Tab = n
+	PageESP.Visible = (n == 1)
+	PageInfo.Visible = (n == 2)
+	UI.TabESP.BackgroundColor3 = n == 1 and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(40, 40, 48)
+	UI.TabInfo.BackgroundColor3 = n == 2 and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(40, 40, 48)
+end
+
+UI.TabESP.MouseButton1Click:Connect(function() SwitchTab(1) end)
+UI.TabInfo.MouseButton1Click:Connect(function() SwitchTab(2) end)
+SwitchTab(1)
+
+UI.BtnES.MouseButton1Click:Connect(function()
+	Lang = "ES"
+	ApplyLang()
+end)
+UI.BtnEN.MouseButton1Click:Connect(function()
+	Lang = "EN"
+	ApplyLang()
+end)
+UI.BtnPT.MouseButton1Click:Connect(function()
+	Lang = "PT"
+	ApplyLang()
+end)
+
+UI.BtnESP.MouseButton1Click:Connect(function()
 	S.ESP = not S.ESP
-	if S.ESP then
-		BtnESP.BackgroundColor3 = Color3.fromRGB(60, 160, 60)
-		BtnESP.Text = "✨ ESP HUEVOS: ACTIVADO"
-		Estado.Text = "✅ ESP activado"
-	else
-		BtnESP.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-		BtnESP.Text = "✨ ESP HUEVOS: DESACTIVADO"
-		Estado.Text = "❌ ESP desactivado"
-		LimpiarESP()
-	end
-end)
-
-BtnFarm.MouseButton1Click:Connect(function()
-	S.FarmActivo = not S.FarmActivo
-	if S.FarmActivo then
-		BtnFarm.BackgroundColor3 = Color3.fromRGB(60, 160, 80)
-		BtnFarm.Text = "🟢 FARM ACTIVO"
-		Estado.Text = "✅ Buscando huevos → "..RANCHOS[S.RanchoFarm].nombre
-	else
-		BtnFarm.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
-		BtnFarm.Text = "🔴 FARM DESACTIVADO"
-		Estado.Text = "✅ Detenido"
-	end
-end)
-
-VelMenos.MouseButton1Click:Connect(function()
-	S.Velocidad = math.max(50, S.Velocidad - 5)
-	VelLbl.Text = "⚡ VELOCIDAD: " .. S.Velocidad
-end)
-
-VelMas.MouseButton1Click:Connect(function()
-	S.Velocidad = math.min(100, S.Velocidad + 5)
-	VelLbl.Text = "⚡ VELOCIDAD: " .. S.Velocidad
+	UI.BtnESP.BackgroundColor3 = S.ESP and Color3.fromRGB(40, 120, 60) or Color3.fromRGB(70, 70, 80)
+	UI.BtnESP.Text = S.ESP and L().EspOn or L().EspOff
+	if not S.ESP then ClearESP() end
 end)
 
 MinBtn.MouseButton1Click:Connect(function()
 	S.Minimizado = not S.Minimizado
-	if S.Minimizado then
-		Main.Size = UDim2.new(0, 300, 0, 65)
-		BtnESP.Visible = false
-		TPTit.Visible = false
-		for _, b in ipairs(BotonesTP) do b.Visible = false end
-		FarmTit.Visible = false
-		for _, b in ipairs(BotonesFarm) do b.Visible = false end
-		BtnFarm.Visible = false
-		VelLbl.Visible = false
-		VelMenos.Visible = false
-		VelMas.Visible = false
-		Estado.Visible = false
-		MarcaAgua.Visible = false
-		MinBtn.Text = "+"
-	else
-		Main.Size = UDim2.new(0, 300, 0, 680)
-		BtnESP.Visible = true
-		TPTit.Visible = true
-		for _, b in ipairs(BotonesTP) do b.Visible = true end
-		FarmTit.Visible = true
-		for _, b in ipairs(BotonesFarm) do b.Visible = true end
-		BtnFarm.Visible = true
-		VelLbl.Visible = true
-		VelMenos.Visible = true
-		VelMas.Visible = true
-		Estado.Visible = true
-		MarcaAgua.Visible = true
-		MinBtn.Text = "-"
-	end
+	TabBar.Visible = not S.Minimizado
+	Body.Visible = not S.Minimizado
+	UI.Footer.Visible = not S.Minimizado
+	Main.Size = S.Minimizado and UDim2.new(0, 280, 0, 48) or UDim2.new(0, 280, 0, 380)
+	MinBtn.Text = S.Minimizado and "+" or "−"
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
-	if LoopConn then LoopConn:Disconnect() end
-	if ESPConn then ESPConn:Disconnect() end
-	LimpiarESP()
+	ClearESP()
 	Gui:Destroy()
 end)
 
--- ==============================================
--- 🔄 BUCLES
--- ==============================================
-LoopConn = RunService.Heartbeat:Connect(function()
-	pcall(BuscarHuevo)
-end)
-
-ESPConn = RunService.RenderStepped:Connect(function()
-	pcall(ActualizarESP)
-end)
-
-print("✅ MONTAR UNA MASCOTA • ESP + TP + FARM CARGADO 🐾 @unrandom_tk")
+ApplyLang()
+print("🐾 Riding a pet • @unrandom_tk")
