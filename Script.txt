@@ -1,6 +1,7 @@
 -- ==============================================
--- 🐾 RIDING A PET • ESP + Chams + Info + FPS
--- ES / EN / PT • @unrandom_tk
+-- 🐾 RIDING A PET • ESP + Info + FPS
+-- Ancho • Fondo visible • ES / EN / PT reales
+-- @unrandom_tk
 -- ==============================================
 
 local Players = game:GetService("Players")
@@ -17,23 +18,23 @@ pcall(function()
 	end
 end)
 
-local NINJA_IMAGE = "rbxassetid://120304331608230"
+local NINJA_IMAGE = "rbxassetid://75287674105658"
 
--- ===== IDIOMAS =====
-local Lang = "ES" -- ES | EN | PT
+local Lang = "ES"
 
+-- Traducciones REALES
 local T = {
 	ES = {
 		Title = "🐾 RIDING A PET",
 		TabESP = "🥚 ESP",
 		TabInfo = "👤 INFO",
-		EspOn = "🥚 ESP + CHAMS: ON",
-		EspOff = "🥚 ESP + CHAMS: OFF",
+		EspOn = "🥚 ESP + CHAMS: ACTIVADO",
+		EspOff = "🥚 ESP + CHAMS: DESACTIVADO",
 		Fps = "⚡ FPS Boost: ACTIVO",
 		User = "Usuario",
-		Display = "Display",
-		UserId = "UserId",
-		Age = "AccountAge",
+		Display = "Nombre",
+		UserId = "ID",
+		Age = "Edad cuenta",
 		Days = " días",
 		Credit = "@unrandom_tk",
 		LangLabel = "Idioma",
@@ -45,10 +46,10 @@ local T = {
 		EspOn = "🥚 ESP + CHAMS: ON",
 		EspOff = "🥚 ESP + CHAMS: OFF",
 		Fps = "⚡ FPS Boost: ACTIVE",
-		User = "User",
-		Display = "Display",
-		UserId = "UserId",
-		Age = "AccountAge",
+		User = "Username",
+		Display = "Display name",
+		UserId = "User ID",
+		Age = "Account age",
 		Days = " days",
 		Credit = "@unrandom_tk",
 		LangLabel = "Language",
@@ -57,13 +58,13 @@ local T = {
 		Title = "🐾 RIDING A PET",
 		TabESP = "🥚 ESP",
 		TabInfo = "👤 INFO",
-		EspOn = "🥚 ESP + CHAMS: ON",
-		EspOff = "🥚 ESP + CHAMS: OFF",
+		EspOn = "🥚 ESP + CHAMS: ATIVADO",
+		EspOff = "🥚 ESP + CHAMS: DESATIVADO",
 		Fps = "⚡ FPS Boost: ATIVO",
 		User = "Usuário",
-		Display = "Display",
-		UserId = "UserId",
-		Age = "AccountAge",
+		Display = "Nome de exibição",
+		UserId = "ID do usuário",
+		Age = "Idade da conta",
 		Days = " dias",
 		Credit = "@unrandom_tk",
 		LangLabel = "Idioma",
@@ -74,17 +75,11 @@ local function L()
 	return T[Lang] or T.ES
 end
 
-local S = {
-	ESP = true,
-	Minimizado = false,
-	Tab = 1,
-}
-
+local S = { ESP = true, Minimizado = false, Tab = 1 }
 local ESPObjects = {}
--- refs UI para actualizar idioma
 local UI = {}
 
--- ===== FPS BOOST =====
+-- FPS
 local function ActivarFPS()
 	pcall(function()
 		settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
@@ -93,14 +88,9 @@ local function ActivarFPS()
 	Lighting.FogEnd = 9e9
 	Lighting.Brightness = 1
 	Lighting.ClockTime = 14
-	pcall(function()
-		Lighting.EnvironmentDiffuseScale = 0
-		Lighting.EnvironmentSpecularScale = 0
-	end)
 	for _, fx in pairs(Lighting:GetChildren()) do
 		if fx:IsA("BloomEffect") or fx:IsA("SunRaysEffect")
-			or fx:IsA("BlurEffect") or fx:IsA("ColorCorrectionEffect")
-			or fx:IsA("DepthOfFieldEffect") then
+			or fx:IsA("BlurEffect") or fx:IsA("ColorCorrectionEffect") then
 			pcall(function() fx.Enabled = false end)
 		end
 	end
@@ -108,26 +98,18 @@ local function ActivarFPS()
 		pcall(function()
 			if v:IsA("BasePart") then
 				v.CastShadow = false
-			elseif v:IsA("ParticleEmitter") or v:IsA("Trail")
-				or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+			elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
 				v.Enabled = false
 			end
 		end)
 	end
-	local Terrain = Workspace:FindFirstChildOfClass("Terrain")
-	if Terrain then
-		Terrain.WaterWaveSize = 0
-		Terrain.WaterWaveSpeed = 0
-		Terrain.WaterReflectance = 0
-	end
 end
 ActivarFPS()
 
--- ===== ESP + CHAMS =====
+-- ESP
 local IGNORAR = {
-	"horn", "brow", "nostril", "fur", "button", "eye", "mouth",
-	"leg", "arm", "hand", "foot", "head", "torso",
-	"mesh", "attachment", "weld", "fp_", "left", "right"
+	"horn","brow","nostril","fur","button","eye","mouth",
+	"leg","arm","hand","foot","head","torso","mesh","fp_","left","right"
 }
 
 local function EsPieza(n)
@@ -147,12 +129,7 @@ local function GetHuevos()
 				local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
 				if part and part.Transparency < 1 then
 					vistos[obj] = true
-					table.insert(lista, {
-						obj = obj,
-						part = part,
-						nombre = obj.Name,
-						pos = part.Position
-					})
+					table.insert(lista, { obj = obj, part = part, nombre = obj.Name, pos = part.Position })
 				end
 			end
 		end
@@ -171,9 +148,7 @@ local function ClearESP()
 end
 
 local function MakeESP(obj, part)
-	if ESPObjects[obj] then return end
-	if obj:FindFirstChild("NinjaHL") then return end
-
+	if ESPObjects[obj] or obj:FindFirstChild("NinjaHL") then return end
 	local d = {}
 	local hl = Instance.new("Highlight")
 	hl.Name = "NinjaHL"
@@ -183,7 +158,6 @@ local function MakeESP(obj, part)
 	hl.FillTransparency = 0.4
 	hl.OutlineTransparency = 0
 	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	hl.Enabled = true
 	hl.Parent = obj
 	d.hl = hl
 
@@ -218,38 +192,26 @@ local function MakeESP(obj, part)
 	distL.TextStrokeTransparency = 0
 	distL.Parent = bill
 
-	d.bill = bill
-	d.distL = distL
+	d.bill, d.distL = bill, distL
 	ESPObjects[obj] = d
 end
 
 local lastESP = 0
 RunService.RenderStepped:Connect(function()
-	if not S.ESP then return end
-	if tick() - lastESP < 0.2 then return end
+	if not S.ESP or tick() - lastESP < 0.2 then return end
 	lastESP = tick()
-
 	local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 	if not root then return end
-
 	local activos = {}
 	for _, h in ipairs(GetHuevos()) do
 		activos[h.obj] = true
-		if not ESPObjects[h.obj] then
-			MakeESP(h.obj, h.part)
-		end
+		if not ESPObjects[h.obj] then MakeESP(h.obj, h.part) end
 		local d = ESPObjects[h.obj]
 		if d then
-			if d.hl and d.hl.Parent then
-				d.hl.Enabled = true
-				d.hl.Adornee = h.obj
-			end
-			if d.distL then
-				d.distL.Text = math.floor((h.pos - root.Position).Magnitude) .. "m"
-			end
+			if d.hl then d.hl.Enabled = true end
+			if d.distL then d.distL.Text = math.floor((h.pos - root.Position).Magnitude) .. "m" end
 		end
 	end
-
 	for obj, d in pairs(ESPObjects) do
 		if not activos[obj] or not obj.Parent then
 			pcall(function()
@@ -261,7 +223,7 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ===== GUI =====
+-- ===== GUI ANCHA =====
 local Gui = Instance.new("ScreenGui")
 Gui.Name = "RidingAPet"
 Gui.ResetOnSpawn = false
@@ -270,9 +232,9 @@ Gui.IgnoreGuiInset = true
 Gui.Parent = parent
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 280, 0, 380)
-Main.Position = UDim2.new(0.5, -140, 0.5, -190)
-Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+Main.Size = UDim2.new(0, 360, 0, 400) -- más ancho
+Main.Position = UDim2.new(0.5, -180, 0.5, -200)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 Main.Active = true
 Main.Draggable = true
 Main.ClipsDescendants = true
@@ -284,91 +246,97 @@ stroke.Color = Color3.fromRGB(212, 175, 55)
 stroke.Thickness = 1.5
 stroke.Parent = Main
 
+-- Fondo imagen en TODO el panel (sin transparencia)
 local bg = Instance.new("ImageLabel")
-bg.Name = "Fondo"
 bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-bg.BackgroundTransparency = 0
+bg.BackgroundTransparency = 1
 bg.Image = NINJA_IMAGE
 bg.ImageTransparency = 0
-bg.ScaleType = Enum.ScaleType.Fit
+bg.ScaleType = Enum.ScaleType.Crop
 bg.ZIndex = 1
 bg.Parent = Main
 Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 14)
 
+-- Header semi transparente para que se vea el fondo
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 48)
-Header.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-Header.BackgroundTransparency = 0.2
+Header.Size = UDim2.new(1, 0, 0, 52)
+Header.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Header.BackgroundTransparency = 0.55
 Header.ZIndex = 3
 Header.Parent = Main
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 14)
 
 UI.Title = Instance.new("TextLabel")
-UI.Title.Size = UDim2.new(1, -85, 0, 28)
-UI.Title.Position = UDim2.new(0, 14, 0, 2)
+UI.Title.Size = UDim2.new(1, -90, 0, 28)
+UI.Title.Position = UDim2.new(0, 14, 0, 4)
 UI.Title.BackgroundTransparency = 1
 UI.Title.Text = L().Title
 UI.Title.Font = Enum.Font.GothamBlack
-UI.Title.TextSize = 15
+UI.Title.TextSize = 16
 UI.Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+UI.Title.TextStrokeTransparency = 0.4
 UI.Title.TextXAlignment = Enum.TextXAlignment.Left
-UI.Title.ZIndex = 4
+UI.Title.ZIndex = 5
 UI.Title.Parent = Header
 
 UI.Credit = Instance.new("TextLabel")
-UI.Credit.Size = UDim2.new(1, -85, 0, 16)
-UI.Credit.Position = UDim2.new(0, 14, 0, 28)
+UI.Credit.Size = UDim2.new(1, -90, 0, 16)
+UI.Credit.Position = UDim2.new(0, 14, 0, 30)
 UI.Credit.BackgroundTransparency = 1
 UI.Credit.Text = "@unrandom_tk"
 UI.Credit.Font = Enum.Font.Gotham
 UI.Credit.TextSize = 11
-UI.Credit.TextColor3 = Color3.fromRGB(212, 175, 55)
+UI.Credit.TextColor3 = Color3.fromRGB(255, 215, 80)
 UI.Credit.TextXAlignment = Enum.TextXAlignment.Left
-UI.Credit.ZIndex = 4
+UI.Credit.ZIndex = 5
 UI.Credit.Parent = Header
 
+-- Solo estos botones opacos
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -70, 0, 9)
-MinBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 58)
+MinBtn.Size = UDim2.new(0, 32, 0, 32)
+MinBtn.Position = UDim2.new(1, -74, 0, 10)
+MinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+MinBtn.BackgroundTransparency = 0
 MinBtn.Text = "−"
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 18
 MinBtn.TextColor3 = Color3.new(1, 1, 1)
-MinBtn.ZIndex = 4
+MinBtn.ZIndex = 6
 MinBtn.Parent = Header
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 7)
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 8)
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -36, 0, 9)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(140, 40, 40)
+CloseBtn.Size = UDim2.new(0, 32, 0, 32)
+CloseBtn.Position = UDim2.new(1, -38, 0, 10)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
+CloseBtn.BackgroundTransparency = 0
 CloseBtn.Text = "X"
 CloseBtn.Font = Enum.Font.GothamBlack
 CloseBtn.TextSize = 14
 CloseBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseBtn.ZIndex = 4
+CloseBtn.ZIndex = 6
 CloseBtn.Parent = Header
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 7)
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
 
 local TabBar = Instance.new("Frame")
-TabBar.Size = UDim2.new(1, -20, 0, 34)
-TabBar.Position = UDim2.new(0, 10, 0, 54)
+TabBar.Size = UDim2.new(1, -24, 0, 36)
+TabBar.Position = UDim2.new(0, 12, 0, 58)
 TabBar.BackgroundTransparency = 1
-TabBar.ZIndex = 4
+TabBar.ZIndex = 5
 TabBar.Parent = Main
 
 local function MakeTab(text, xScale)
 	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(0.5, -4, 1, 0)
-	b.Position = UDim2.new(xScale, xScale > 0 and 4 or 0, 0, 0)
-	b.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+	b.Size = UDim2.new(0.5, -5, 1, 0)
+	b.Position = UDim2.new(xScale, xScale > 0 and 5 or 0, 0, 0)
+	b.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+	b.BackgroundTransparency = 0.25
 	b.Text = text
 	b.Font = Enum.Font.GothamBold
-	b.TextSize = 12
-	b.TextColor3 = Color3.fromRGB(220, 220, 220)
-	b.ZIndex = 4
+	b.TextSize = 13
+	b.TextColor3 = Color3.fromRGB(255, 255, 255)
+	b.TextStrokeTransparency = 0.5
+	b.ZIndex = 5
 	b.Parent = TabBar
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
 	return b
@@ -378,72 +346,74 @@ UI.TabESP = MakeTab(L().TabESP, 0)
 UI.TabInfo = MakeTab(L().TabInfo, 0.5)
 
 local Body = Instance.new("Frame")
-Body.Size = UDim2.new(1, -20, 1, -130)
-Body.Position = UDim2.new(0, 10, 0, 94)
+Body.Size = UDim2.new(1, -24, 1, -130)
+Body.Position = UDim2.new(0, 12, 0, 100)
 Body.BackgroundTransparency = 1
-Body.ZIndex = 4
+Body.ZIndex = 5
 Body.Parent = Main
 
--- Page ESP
+-- ESP page
 local PageESP = Instance.new("Frame")
 PageESP.Size = UDim2.new(1, 0, 1, 0)
 PageESP.BackgroundTransparency = 1
-PageESP.ZIndex = 4
+PageESP.ZIndex = 5
 PageESP.Parent = Body
 
 UI.BtnESP = Instance.new("TextButton")
-UI.BtnESP.Size = UDim2.new(1, 0, 0, 40)
-UI.BtnESP.BackgroundColor3 = Color3.fromRGB(40, 120, 60)
+UI.BtnESP.Size = UDim2.new(1, 0, 0, 42)
+UI.BtnESP.BackgroundColor3 = Color3.fromRGB(35, 110, 55)
+UI.BtnESP.BackgroundTransparency = 0.1
 UI.BtnESP.Text = L().EspOn
 UI.BtnESP.Font = Enum.Font.GothamBold
 UI.BtnESP.TextSize = 14
 UI.BtnESP.TextColor3 = Color3.new(1, 1, 1)
-UI.BtnESP.ZIndex = 4
+UI.BtnESP.ZIndex = 5
 UI.BtnESP.Parent = PageESP
 Instance.new("UICorner", UI.BtnESP).CornerRadius = UDim.new(0, 10)
 
 UI.FpsLbl = Instance.new("TextLabel")
-UI.FpsLbl.Size = UDim2.new(1, 0, 0, 28)
-UI.FpsLbl.Position = UDim2.new(0, 0, 0, 50)
-UI.FpsLbl.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
-UI.FpsLbl.BackgroundTransparency = 0.15
+UI.FpsLbl.Size = UDim2.new(1, 0, 0, 30)
+UI.FpsLbl.Position = UDim2.new(0, 0, 0, 52)
+UI.FpsLbl.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+UI.FpsLbl.BackgroundTransparency = 0.3
 UI.FpsLbl.Text = L().Fps
 UI.FpsLbl.Font = Enum.Font.GothamBold
-UI.FpsLbl.TextSize = 12
-UI.FpsLbl.TextColor3 = Color3.fromRGB(100, 220, 120)
-UI.FpsLbl.ZIndex = 4
+UI.FpsLbl.TextSize = 13
+UI.FpsLbl.TextColor3 = Color3.fromRGB(100, 230, 120)
+UI.FpsLbl.ZIndex = 5
 UI.FpsLbl.Parent = PageESP
 Instance.new("UICorner", UI.FpsLbl).CornerRadius = UDim.new(0, 8)
 
--- Selector de idioma
 UI.LangLbl = Instance.new("TextLabel")
-UI.LangLbl.Size = UDim2.new(1, 0, 0, 18)
-UI.LangLbl.Position = UDim2.new(0, 0, 0, 90)
+UI.LangLbl.Size = UDim2.new(1, 0, 0, 20)
+UI.LangLbl.Position = UDim2.new(0, 0, 0, 95)
 UI.LangLbl.BackgroundTransparency = 1
 UI.LangLbl.Text = L().LangLabel
 UI.LangLbl.Font = Enum.Font.GothamBold
-UI.LangLbl.TextSize = 11
-UI.LangLbl.TextColor3 = Color3.fromRGB(212, 175, 55)
-UI.LangLbl.ZIndex = 4
+UI.LangLbl.TextSize = 12
+UI.LangLbl.TextColor3 = Color3.fromRGB(255, 215, 80)
+UI.LangLbl.TextStrokeTransparency = 0.3
+UI.LangLbl.ZIndex = 5
 UI.LangLbl.Parent = PageESP
 
 local LangBar = Instance.new("Frame")
-LangBar.Size = UDim2.new(1, 0, 0, 32)
-LangBar.Position = UDim2.new(0, 0, 0, 112)
+LangBar.Size = UDim2.new(1, 0, 0, 36)
+LangBar.Position = UDim2.new(0, 0, 0, 120)
 LangBar.BackgroundTransparency = 1
-LangBar.ZIndex = 4
+LangBar.ZIndex = 5
 LangBar.Parent = PageESP
 
 local function LangBtn(text, x)
 	local b = Instance.new("TextButton")
 	b.Size = UDim2.new(0.33, -4, 1, 0)
 	b.Position = UDim2.new(x, 0, 0, 0)
-	b.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+	b.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+	b.BackgroundTransparency = 0.15
 	b.Text = text
 	b.Font = Enum.Font.GothamBold
-	b.TextSize = 12
+	b.TextSize = 13
 	b.TextColor3 = Color3.new(1, 1, 1)
-	b.ZIndex = 4
+	b.ZIndex = 5
 	b.Parent = LangBar
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
 	return b
@@ -453,19 +423,19 @@ UI.BtnES = LangBtn("ES", 0)
 UI.BtnEN = LangBtn("EN", 0.33)
 UI.BtnPT = LangBtn("PT", 0.66)
 
--- Page Info
+-- Info page
 local PageInfo = Instance.new("Frame")
 PageInfo.Size = UDim2.new(1, 0, 1, 0)
 PageInfo.BackgroundTransparency = 1
 PageInfo.Visible = false
-PageInfo.ZIndex = 4
+PageInfo.ZIndex = 5
 PageInfo.Parent = Body
 
 local AvatarRing = Instance.new("Frame")
-AvatarRing.Size = UDim2.new(0, 84, 0, 84)
-AvatarRing.Position = UDim2.new(0.5, -42, 0, 4)
+AvatarRing.Size = UDim2.new(0, 90, 0, 90)
+AvatarRing.Position = UDim2.new(0.5, -45, 0, 4)
 AvatarRing.BackgroundColor3 = Color3.fromRGB(212, 175, 55)
-AvatarRing.ZIndex = 4
+AvatarRing.ZIndex = 5
 AvatarRing.Parent = PageInfo
 Instance.new("UICorner", AvatarRing).CornerRadius = UDim.new(1, 0)
 
@@ -473,7 +443,7 @@ local AvatarInner = Instance.new("Frame")
 AvatarInner.Size = UDim2.new(1, -6, 1, -6)
 AvatarInner.Position = UDim2.new(0, 3, 0, 3)
 AvatarInner.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-AvatarInner.ZIndex = 5
+AvatarInner.ZIndex = 6
 AvatarInner.Parent = AvatarRing
 Instance.new("UICorner", AvatarInner).CornerRadius = UDim.new(1, 0)
 
@@ -481,108 +451,102 @@ local Avatar = Instance.new("ImageLabel")
 Avatar.Size = UDim2.new(1, -4, 1, -4)
 Avatar.Position = UDim2.new(0, 2, 0, 2)
 Avatar.BackgroundTransparency = 1
-Avatar.ZIndex = 6
+Avatar.ZIndex = 7
 Avatar.Parent = AvatarInner
 Instance.new("UICorner", Avatar).CornerRadius = UDim.new(1, 0)
 
 task.spawn(function()
 	local ok, url = pcall(function()
-		return Players:GetUserThumbnailAsync(
-			LP.UserId,
-			Enum.ThumbnailType.HeadShot,
-			Enum.ThumbnailSize.Size150x150
-		)
+		return Players:GetUserThumbnailAsync(LP.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
 	end)
-	if ok and url then
-		Avatar.Image = url
-	else
-		Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LP.UserId .. "&w=150&h=150"
-	end
+	Avatar.Image = (ok and url) or ("rbxthumb://type=AvatarHeadShot&id=" .. LP.UserId .. "&w=150&h=150")
 end)
 
 UI.InfoLabels = {}
+UI.InfoValues = {}
 
 local function InfoLine(y, key, value)
 	local f = Instance.new("Frame")
-	f.Size = UDim2.new(1, 0, 0, 28)
+	f.Size = UDim2.new(1, 0, 0, 30)
 	f.Position = UDim2.new(0, 0, 0, y)
-	f.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
-	f.BackgroundTransparency = 0.15
-	f.ZIndex = 4
+	f.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+	f.BackgroundTransparency = 0.3
+	f.ZIndex = 5
 	f.Parent = PageInfo
 	Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
 
 	local l = Instance.new("TextLabel")
-	l.Size = UDim2.new(0.4, 0, 1, 0)
-	l.Position = UDim2.new(0, 10, 0, 0)
+	l.Size = UDim2.new(0.45, 0, 1, 0)
+	l.Position = UDim2.new(0, 12, 0, 0)
 	l.BackgroundTransparency = 1
 	l.Text = key
 	l.Font = Enum.Font.GothamBold
-	l.TextSize = 11
-	l.TextColor3 = Color3.fromRGB(212, 175, 55)
+	l.TextSize = 12
+	l.TextColor3 = Color3.fromRGB(255, 215, 80)
 	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.ZIndex = 5
+	l.ZIndex = 6
 	l.Parent = f
 
 	local v = Instance.new("TextLabel")
-	v.Size = UDim2.new(0.55, -10, 1, 0)
-	v.Position = UDim2.new(0.4, 0, 0, 0)
+	v.Size = UDim2.new(0.5, -12, 1, 0)
+	v.Position = UDim2.new(0.45, 0, 0, 0)
 	v.BackgroundTransparency = 1
 	v.Text = value
 	v.Font = Enum.Font.Gotham
-	v.TextSize = 11
-	v.TextColor3 = Color3.fromRGB(230, 230, 230)
+	v.TextSize = 12
+	v.TextColor3 = Color3.fromRGB(240, 240, 240)
 	v.TextXAlignment = Enum.TextXAlignment.Right
 	v.TextTruncate = Enum.TextTruncate.AtEnd
-	v.ZIndex = 5
+	v.ZIndex = 6
 	v.Parent = f
-
-	return l
+	return l, v
 end
 
-UI.InfoLabels.User = InfoLine(96, L().User, LP.Name)
-UI.InfoLabels.Display = InfoLine(128, L().Display, LP.DisplayName)
-UI.InfoLabels.UserId = InfoLine(160, L().UserId, tostring(LP.UserId))
-UI.InfoLabels.Age = InfoLine(192, L().Age, tostring(LP.AccountAge) .. L().Days)
+UI.InfoLabels.User, UI.InfoValues.User = InfoLine(100, L().User, LP.Name)
+UI.InfoLabels.Display, UI.InfoValues.Display = InfoLine(134, L().Display, LP.DisplayName)
+UI.InfoLabels.UserId, UI.InfoValues.UserId = InfoLine(168, L().UserId, tostring(LP.UserId))
+UI.InfoLabels.Age, UI.InfoValues.Age = InfoLine(202, L().Age, tostring(LP.AccountAge) .. L().Days)
 
--- Crédito abajo
 UI.Footer = Instance.new("TextLabel")
-UI.Footer.Size = UDim2.new(1, -20, 0, 18)
-UI.Footer.Position = UDim2.new(0, 10, 1, -24)
+UI.Footer.Size = UDim2.new(1, -24, 0, 20)
+UI.Footer.Position = UDim2.new(0, 12, 1, -26)
 UI.Footer.BackgroundTransparency = 1
 UI.Footer.Text = "@unrandom_tk"
 UI.Footer.Font = Enum.Font.GothamBold
-UI.Footer.TextSize = 11
-UI.Footer.TextColor3 = Color3.fromRGB(212, 175, 55)
-UI.Footer.ZIndex = 4
+UI.Footer.TextSize = 12
+UI.Footer.TextColor3 = Color3.fromRGB(255, 215, 80)
+UI.Footer.ZIndex = 5
 UI.Footer.Parent = Main
 
+-- Aplicar idioma de verdad
 local function ApplyLang()
 	local t = L()
 	UI.Title.Text = t.Title
+	UI.Credit.Text = t.Credit
+	UI.Footer.Text = t.Credit
 	UI.TabESP.Text = t.TabESP
 	UI.TabInfo.Text = t.TabInfo
 	UI.BtnESP.Text = S.ESP and t.EspOn or t.EspOff
 	UI.FpsLbl.Text = t.Fps
 	UI.LangLbl.Text = t.LangLabel
+
 	UI.InfoLabels.User.Text = t.User
 	UI.InfoLabels.Display.Text = t.Display
 	UI.InfoLabels.UserId.Text = t.UserId
 	UI.InfoLabels.Age.Text = t.Age
-	UI.Footer.Text = t.Credit
-	UI.Credit.Text = t.Credit
+	UI.InfoValues.Age.Text = tostring(LP.AccountAge) .. t.Days
 
-	UI.BtnES.BackgroundColor3 = Lang == "ES" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(45, 45, 52)
-	UI.BtnEN.BackgroundColor3 = Lang == "EN" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(45, 45, 52)
-	UI.BtnPT.BackgroundColor3 = Lang == "PT" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(45, 45, 52)
+	UI.BtnES.BackgroundColor3 = Lang == "ES" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(40, 40, 48)
+	UI.BtnEN.BackgroundColor3 = Lang == "EN" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(40, 40, 48)
+	UI.BtnPT.BackgroundColor3 = Lang == "PT" and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(40, 40, 48)
 end
 
 local function SwitchTab(n)
 	S.Tab = n
 	PageESP.Visible = (n == 1)
 	PageInfo.Visible = (n == 2)
-	UI.TabESP.BackgroundColor3 = n == 1 and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(40, 40, 48)
-	UI.TabInfo.BackgroundColor3 = n == 2 and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(40, 40, 48)
+	UI.TabESP.BackgroundColor3 = n == 1 and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(30, 30, 36)
+	UI.TabInfo.BackgroundColor3 = n == 2 and Color3.fromRGB(180, 150, 55) or Color3.fromRGB(30, 30, 36)
 end
 
 UI.TabESP.MouseButton1Click:Connect(function() SwitchTab(1) end)
@@ -604,7 +568,7 @@ end)
 
 UI.BtnESP.MouseButton1Click:Connect(function()
 	S.ESP = not S.ESP
-	UI.BtnESP.BackgroundColor3 = S.ESP and Color3.fromRGB(40, 120, 60) or Color3.fromRGB(70, 70, 80)
+	UI.BtnESP.BackgroundColor3 = S.ESP and Color3.fromRGB(35, 110, 55) or Color3.fromRGB(70, 70, 80)
 	UI.BtnESP.Text = S.ESP and L().EspOn or L().EspOff
 	if not S.ESP then ClearESP() end
 end)
@@ -614,7 +578,7 @@ MinBtn.MouseButton1Click:Connect(function()
 	TabBar.Visible = not S.Minimizado
 	Body.Visible = not S.Minimizado
 	UI.Footer.Visible = not S.Minimizado
-	Main.Size = S.Minimizado and UDim2.new(0, 280, 0, 48) or UDim2.new(0, 280, 0, 380)
+	Main.Size = S.Minimizado and UDim2.new(0, 360, 0, 52) or UDim2.new(0, 360, 0, 400)
 	MinBtn.Text = S.Minimizado and "+" or "−"
 end)
 
